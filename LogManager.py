@@ -5,7 +5,23 @@ import pyodbc
 
 
 def conectar():
-    pass
+    server = server_entry.get()
+    auth = auth_combo.get()
+    user = user_entry.get()
+    password = password_entry.get()
+    database = db_combo.get()
+
+    if auth == "Windows":
+        connection_string = f"DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={server};DATABASE={database};Trusted_Connection=yes;"
+    else:
+        connection_string = f"DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={server};DATABASE={database};UID={user};PWD={password};"
+
+    try:
+        conn = pyodbc.connect(connection_string)
+        messagebox.showinfo("Soco", "Se pudo conectar exitosamente")
+    except Exception as e:
+        messagebox.showerror("Error", f"No soca:\n{e}")
+
 root = tk.Tk()
 root.title("Transaction Log Manager")
 root.geometry("370x400")

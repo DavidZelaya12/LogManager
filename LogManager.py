@@ -9,7 +9,7 @@ def conectar():
     auth = auth_combo.get()
     user = user_entry.get()
     password = password_entry.get()
-    database = db_combo.get()
+    database = db_entry.get()
 
     if auth == "Windows":
         connection_string = f"DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={server};DATABASE={database};Trusted_Connection=yes;"
@@ -25,17 +25,47 @@ def conectar():
     except Exception as e:
         messagebox.showerror("Error", f"No soca:\n{e}")
 
+    print("Conectado a la base de datos:",database)
+
 def filtrar_logs():
     for item in tree.get_children():
         tree.delete(item)
 
     log_option_value = log_option.get()
+    
     try:
         cursor = conn.cursor()
         if log_option_value == "online":
-            query = "SELECT [Operation], [Context], [Transaction ID], [AllocUnitName], [Begin Time], [End Time], [Log Record Length], [Current LSN] FROM sys.fn_dblog(NULL, NULL)"
+            query = """
+            SELECT 
+                [Operation],
+                CASE 
+                    WHEN [Context] LIKE '%.dbo%' THEN 'dbo' 
+                    ELSE 'Unknown' 
+                END AS [SchemaName],
+                CASE 
+                    WHEN [Context] LIKE '%.dbo%' THEN 'Object' 
+                    ELSE 'Unknown' 
+                END AS [ObjectName],
+                [Transaction SID] AS [UserName], 
+                [Begin Time], 
+                [End Time], 
+                [Transaction ID], 
+                [Current LSN]
+            FROM 
+                sys.fn_dblog(NULL, NULL)
+            """
         else:
             query = "SELECT 'Backup logs not yet implemented' AS [Operation]"
+        
+        cursor.execute(query)
+        
+        rows = cursor.fetchall()
+        for row in rows:
+            tree.insert("", "end", values=row)
+    
+    except Exception as e:
+        print("Error al filtrar logs:", e)
 
         cursor.execute(query)
         for row in cursor.fetchall():
@@ -123,7 +153,7 @@ def ConnectionScreen():
     for widget in root.winfo_children():
         widget.destroy()
 
-    global auth_combo, user_entry, password_entry, db_combo, log_option, from_date_entry, to_date_entry,server_entry    
+    global auth_combo, user_entry, password_entry, log_option, from_date_entry, to_date_entry,server_entry,db_entry   
     tk.Label(root, text="Server:", fg="white", bg="#2D2D30", font=("Arial", 10)).place(x=30, y=30)
     server_entry = tk.Entry(root, width=30)
     server_entry.place(x=150, y=30)
@@ -141,9 +171,8 @@ def ConnectionScreen():
     password_entry.place(x=150, y=150)
 
     tk.Label(root, text="Database:", fg="white", bg="#2D2D30", font=("Arial", 10)).place(x=30, y=190)
-    db_combo = ttk.Combobox(root, values=["master"], width=27, state="readonly")
-    db_combo.current(0)
-    db_combo.place(x=150, y=190)
+    db_entry = tk.Entry(root, width=30)
+    db_entry.place(x=150, y=190)
 
     log_option = tk.StringVar(value="online")
     tk.Radiobutton(

@@ -3,7 +3,7 @@ from tkinter import ttk, messagebox
 from tkcalendar import DateEntry
 import pyodbc
 
-
+#------------------------Funcionalidades---------------------------------#
 def conectar():
     server = server_entry.get()
     auth = auth_combo.get()
@@ -48,6 +48,18 @@ def filtrar_logs():
     except Exception as e:
         messagebox.showerror("Error", f"No se pudo obtener el log:\n{e}")
 
+def show_transaction_details(event):
+    selected_item = tree.selection()
+    if not selected_item:
+        messagebox.showinfo("Info", "Por favor, selecciona una transacción.")
+        return
+
+    transaction_data = tree.item(selected_item, "values")
+    if transaction_data:
+        TransactionInformationScreen(transaction_data)
+
+
+#------------------------Visual---------------------------------#
 
 def LogScreen():
     root.geometry("800x600")
@@ -102,9 +114,8 @@ def LogScreen():
         tree.column(col, anchor="w", width=100)
 
     tk.Button(root, text="Volver", command=ConnectionScreen, bg="#3A3A3D", fg="white", font=("Arial", 10)).pack(pady=10)
-
+    tree.bind("<<TreeviewSelect>>", show_transaction_details)
     filtrar_logs()
-
 
 
 def ConnectionScreen():
@@ -155,7 +166,39 @@ def ConnectionScreen():
     connect_button = tk.Button(root, text="Conectarse", command=conectar, bg="#3A3A3D", fg="white", font=("Arial", 10))
     connect_button.place(x=150, y=350)
     
+
+def TransactionInformationScreen(transaction_data):
+    transaction_id = transaction_data[6]  
     
+    details_window = tk.Toplevel(root)
+    details_window.title(f"Detalles de la transacción: {transaction_id}")
+    details_window.geometry("600x400")
+    details_window.configure(bg="#2D2D30")
+
+    notebook = ttk.Notebook(details_window)
+    notebook.pack(expand=True, fill="both", padx=10, pady=10)
+
+    operation_frame = ttk.Frame(notebook)
+    notebook.add(operation_frame, text="Operation details")
+    ttk.Label(operation_frame, text=f"Detalles de la operación {transaction_id}", font=("Arial", 10)).pack(pady=10)
+
+    row_history_frame = ttk.Frame(notebook)
+    notebook.add(row_history_frame, text="Row history")
+    ttk.Label(row_history_frame, text="Historial de filas afectadas", font=("Arial", 10)).pack(pady=10)
+
+    undo_frame = ttk.Frame(notebook)
+    notebook.add(undo_frame, text="Undo script")
+    ttk.Label(undo_frame, text="Generación del script UNDO", font=("Arial", 10)).pack(pady=10)
+
+    redo_frame = ttk.Frame(notebook)
+    notebook.add(redo_frame, text="Redo script")
+    ttk.Label(redo_frame, text="Generación del script REDO", font=("Arial", 10)).pack(pady=10)
+
+    transaction_info_frame = ttk.Frame(notebook)
+    notebook.add(transaction_info_frame, text="Transaction information")
+    ttk.Label(transaction_info_frame, text=f"Información de la transacción {transaction_id}", font=("Arial", 10)).pack(pady=10)
+
+#------------------------Main---------------------------------#
 
 root = tk.Tk()
 root.title("Transaction Log Manager")
